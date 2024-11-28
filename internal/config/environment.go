@@ -5,6 +5,7 @@ package config
 
 import (
 	"fmt"
+
 	"github.com/caarlos0/env/v11"
 	_ "github.com/joho/godotenv/autoload"
 )
