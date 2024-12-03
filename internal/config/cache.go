@@ -33,6 +33,7 @@ func ConnectCache(ctx context.Context) (*redis.Client, error) {
 
 		_, err := client.Ping().Result()
 		if err != nil {
+			_ = client.Close()
 			return nil, err
 		}
 
