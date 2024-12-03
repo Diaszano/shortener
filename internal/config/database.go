@@ -4,7 +4,6 @@ package config
 
 import (
 	"context"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,22 +17,22 @@ import (
 // - *pgxpool.Pool: A connection pool for interacting with the database.
 // - error: An error if the connection fails or if the database cannot be reached.
 func ConnectDatabase(ctx context.Context) (*pgxpool.Pool, error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
 
-	pool, err := pgxpool.New(ctx, Env.Database.Dsn())
-	if err != nil {
-		return nil, err
+	default:
+		pool, err := pgxpool.New(ctx, Env.Database.Dsn())
+		if err != nil {
+			return nil, err
+		}
+
+		err = pool.Ping(ctx)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+
+		return pool, nil
 	}
-
-	ctx, cancel = context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
-
-	err = pool.Ping(ctx)
-	if err != nil {
-		pool.Close()
-		return nil, err
-	}
-
-	return pool, nil
 }
