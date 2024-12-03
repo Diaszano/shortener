@@ -4,17 +4,20 @@ package config
 
 import (
 	"context"
-	"time"
 
 	"github.com/go-redis/redis"
 )
 
 // ConnectCache establishes a connection to the Redis cache using the application configuration.
 // It uses a context with a timeout to limit the duration of the connection attempt.
+//
+// Parameters:
+//   - ctx: The context to control timeout and cancellation.
+//
+// Returns:
+//   - *redis.Client: A pointer to the initialized Redis client.
+//   - error: An error if the connection fails.
 func ConnectCache(ctx context.Context) (*redis.Client, error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*50)
-	defer cancel()
-
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
