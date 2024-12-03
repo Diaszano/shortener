@@ -10,6 +10,38 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 )
 
+// cache represents the Redis cache configuration, loaded from environment variables
+// prefixed with "CACHE_".
+type cache struct {
+	// Host specifies the Redis server's hostname or IP address.
+	// This field is required and cannot be empty.
+	Host string `env:"HOST,required,notEmpty"`
+
+	// Port specifies the port of the Redis server.
+	// Defaults to "6379" if not explicitly set.
+	Port uint `env:"PORT" envDefault:"6379"`
+
+	// User specifies the username for connecting to the Redis server.
+	User string `env:"USER"`
+
+	// Pass specifies the password for authenticating with the Redis server.
+	Pass string `env:"PASS"`
+
+	// DB specifies the database index to use on the Redis server.
+	// Defaults to "0" if not explicitly set.
+	DB uint `env:"DB" envDefault:"0"`
+
+	// Protocol specifies the Redis protocol version.
+	// Defaults to "3" if not explicitly set.
+	Protocol uint `env:"PROTOCOL" envDefault:"3"`
+}
+
+// Addr generates the address string for connecting to the Redis server,
+// combining the Host and Port fields.
+func (c cache) Addr() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
+}
+
 // database represents the database configuration, which is loaded from
 // environment variables prefixed with "DATABASE_".
 type database struct {
@@ -52,7 +84,7 @@ func (d database) Dsn() string {
 type server struct {
 	// Port specifies the port the server will listen on for incoming connections.
 	// Defaults to "2821" if not explicitly set.
-	Port uint `env:"PORT" envDefault:"2821"`
+	Port uint `envDefault:"2821"`
 
 	// LogLevel specifies the verbosity level of the application logs.
 	// Defaults to "info" if not explicitly set.
@@ -60,7 +92,7 @@ type server struct {
 }
 
 // environment aggregates all configurations for the application,
-// grouping them under respective prefixes for database and server settings.
+// grouping them under respective prefixes for database, server, and cache settings.
 type environment struct {
 	// Database holds the database configuration, with all fields
 	// prefixed by "DATABASE_".
@@ -69,6 +101,10 @@ type environment struct {
 	// Server holds the server configuration, with all fields
 	// prefixed by "SERVER_".
 	Server server `envPrefix:"SERVER_"`
+
+	// Cache holds the Redis cache configuration, with all fields
+	// prefixed by "CACHE_".
+	Cache cache `envPrefix:"CACHE_"`
 }
 
 // Env is the global instance of the environment configuration,
