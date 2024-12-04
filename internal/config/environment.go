@@ -5,9 +5,11 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/caarlos0/env/v11"
 	_ "github.com/joho/godotenv/autoload"
+	"go.uber.org/zap/zapcore"
 )
 
 // cache represents the Redis cache configuration, loaded from environment variables
@@ -82,13 +84,29 @@ func (d database) Dsn() string {
 // server represents the server configuration, which is loaded from
 // environment variables prefixed with "SERVER_".
 type server struct {
-	// Port specifies the port the server will listen on for incoming connections.
-	// Defaults to "2821" if not explicitly set.
-	Port uint `envDefault:"2821"`
-
 	// LogLevel specifies the verbosity level of the application logs.
 	// Defaults to "info" if not explicitly set.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
+
+	// AppEnv specifies the application environment, such as "production" or "development".
+	// Defaults to "production" if not explicitly set.
+	AppEnv string `env:"APP_ENV" envDefault:"production"`
+}
+
+// IsDevelopment checks if the current application environment is set to "development".
+func (s server) IsDevelopment() bool {
+	appEnv := strings.ToLower(s.AppEnv)
+	return appEnv == "development" || appEnv == "dev"
+}
+
+// GetLogLevel parses and returns the configured log level as a zapcore.Level.
+// If parsing fails, it defaults to zapcore.InfoLevel.
+func (s server) GetLogLevel() zapcore.Level {
+	logLevel, err := zapcore.ParseLevel(strings.ToLower(s.LogLevel))
+	if err != nil {
+		return zapcore.InfoLevel
+	}
+	return logLevel
 }
 
 // environment aggregates all configurations for the application,
