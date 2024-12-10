@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -21,47 +22,43 @@ import (
 // main is the entry point of the migration tool. It initializes the database connection,
 // sets up the migration instance, and executes migration commands based on the provided arguments.
 func main() {
-
-	logger := config.GetLogger()
-	defer config.CloseLogger()
-
 	db, err := sql.Open("postgres", config.Env.Database.Dsn())
 	if err != nil {
-		logger.Fatal("Failed to connect to the database", zap.Error(err))
+		log.Fatal("Failed to connect to the database", zap.Error(err))
 	}
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		logger.Fatal("Failed to initialize database driver", zap.Error(err))
+		log.Fatal("Failed to initialize database driver", zap.Error(err))
 	}
 
 	m, err := migrate.NewWithDatabaseInstance("file:internal/database/migrations", "postgres", driver)
 	if err != nil {
-		logger.Fatal("Failed to initialize migrations", zap.Error(err))
+		log.Fatal("Failed to initialize migrations", zap.Error(err))
 	}
 
 	switch cmd := os.Args[len(os.Args)-1]; strings.ToLower(cmd) {
 	case "up":
 		if err := m.Up(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
-				logger.Info("No migrations to apply (up-to-date).")
+				log.Println("No migrations to apply (up-to-date).")
 			} else {
-				logger.Fatal("Failed to apply migrations", zap.Error(err))
+				log.Fatal("Failed to apply migrations", zap.Error(err))
 			}
 		} else {
-			logger.Info("Migrations applied successfully.")
+			log.Println("Migrations applied successfully.")
 		}
 	case "down":
 		if err := m.Down(); err != nil {
 			if errors.Is(err, migrate.ErrNoChange) {
-				logger.Info("No migrations to revert (already clean).")
+				log.Println("No migrations to revert (already clean).")
 			} else {
-				logger.Fatal("Failed to revert migrations", zap.Error(err))
+				log.Fatal("Failed to revert migrations", zap.Error(err))
 			}
 		} else {
-			logger.Info("Migrations reverted successfully.")
+			log.Println("Migrations reverted successfully.")
 		}
 	default:
-		logger.Fatal(fmt.Sprintf("Invalid option: %s", cmd))
+		log.Fatal(fmt.Sprintf("Invalid option: %s", cmd))
 	}
 }
