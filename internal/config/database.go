@@ -5,6 +5,7 @@ package config
 import (
 	"context"
 
+	"github.com/agoda-com/opentelemetry-go/otelzap"
 	"go.uber.org/zap"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,31 +20,30 @@ import (
 // - *pgxpool.Pool: A connection pool for interacting with the database.
 // - error: An error if the connection fails or if the database cannot be reached.
 func ConnectDatabase(ctx context.Context) (*pgxpool.Pool, error) {
-	log := GetLogger()
-	log.Info("Starting connection to the database")
+	otelzap.Ctx(ctx).Info("Starting connection to the database")
 
 	select {
 	case <-ctx.Done():
-		log.Warn("Context canceled before connecting to the database")
+		otelzap.Ctx(ctx).Warn("Context canceled before connecting to the database")
 		return nil, ctx.Err()
 
 	default:
 		pool, err := pgxpool.New(ctx, Env.Database.Dsn())
 		if err != nil {
-			log.Error("Error creating new database connection pool", zap.Error(err))
+			otelzap.Ctx(ctx).Error("Error creating new database connection pool", zap.Error(err))
 			return nil, err
 		}
 
-		log.Info("Database connection pool created successfully")
+		otelzap.Ctx(ctx).Info("Database connection pool created successfully")
 
 		err = pool.Ping(ctx)
 		if err != nil {
-			log.Error("Error pinging the database", zap.Error(err))
+			otelzap.Ctx(ctx).Error("Error pinging the database", zap.Error(err))
 			pool.Close()
 			return nil, err
 		}
 
-		log.Info("Successfully connected to the database")
+		otelzap.Ctx(ctx).Info("Successfully connected to the database")
 		return pool, nil
 	}
 }
