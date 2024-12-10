@@ -6,6 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/agoda-com/opentelemetry-go/otelzap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/agoda-com/opentelemetry-logs-go/exporters/otlp/otlplogs"
 	sdk "github.com/agoda-com/opentelemetry-logs-go/sdk/logs"
 	"go.opentelemetry.io/otel"
@@ -69,4 +73,23 @@ func InitLogger() (*sdk.LoggerProvider, func()) {
 		}
 		log.Println("[INFO] Logger shutdown completed")
 	}
+}
+
+// SetupLogger configures and returns a new zap.Logger instance that integrates
+// OpenTelemetry logging with a JSON encoder and standard output. The logger uses
+// the logging level specified in the application configuration.
+func SetupLogger(loggerProvider *sdk.LoggerProvider) *zap.Logger {
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.TimeKey = "timestamp"
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+
+	core := zapcore.NewTee(
+		otelzap.NewOtelCore(loggerProvider),
+		zapcore.NewCore(
+			zapcore.NewJSONEncoder(encoderConfig),
+			zapcore.AddSync(os.Stdout),
+			zap.NewAtomicLevelAt(Env.Server.GetLogLevel()),
+		),
+	)
+	return zap.New(core)
 }
